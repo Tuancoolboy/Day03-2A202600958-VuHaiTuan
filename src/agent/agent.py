@@ -8,6 +8,76 @@ class ReActAgent:
     """
     A ReAct-style Agent that follows the Thought-Action-Observation loop.
     """
+
+    CONTRACT_DOMAIN_KEYWORDS = {
+        "hợp đồng",
+        "hop dong",
+        "điều khoản",
+        "dieu khoan",
+        "pháp lý",
+        "phap ly",
+        "luật",
+        "luat",
+        "ký",
+        "ky",
+        "đặt cọc",
+        "dat coc",
+        "thuê",
+        "thue",
+        "bên a",
+        "bên b",
+        "ben a",
+        "ben b",
+        "người lao động",
+        "nguoi lao dong",
+        "bên bán",
+        "ben ban",
+        "bên mua",
+        "ben mua",
+    }
+    ANALYSIS_INTENT_KEYWORDS = {
+        "tóm tắt",
+        "tom tat",
+        "phân tích",
+        "phan tich",
+        "rủi ro",
+        "rui ro",
+        "rà soát",
+        "ra soat",
+        "kiểm tra",
+        "kiem tra",
+        "trích xuất",
+        "trich xuat",
+        "chỉ ra",
+        "chi ra",
+        "review",
+        "analyze",
+        "summarize",
+    }
+    CONTRACT_TEXT_MARKERS = {
+        "bên a",
+        "bên b",
+        "ben a",
+        "ben b",
+        "điều ",
+        "dieu ",
+        "thời hạn",
+        "thoi han",
+        "thanh toán",
+        "thanh toan",
+        "tiền thuê",
+        "tien thue",
+        "đặt cọc",
+        "dat coc",
+        "chấm dứt",
+        "cham dut",
+        "tranh chấp",
+        "tranh chap",
+        "nghĩa vụ",
+        "nghia vu",
+        "trách nhiệm",
+        "trach nhiem",
+    }
     
     def __init__(self, llm: LLMProvider, tools: List[Dict[str, Any]], max_steps: int = 5):
         self.llm = llm
@@ -36,6 +106,8 @@ Rules:
 - If a tool returns missing data, say that clearly instead of inventing facts.
 - Reply in Vietnamese unless the user explicitly asks for another language.
 - Always include a short Vietnamese note that this is not official legal advice for important legal decisions.
+- If the request is outside contract review, do not call tools. Politely say this assistant only supports contract-review tasks.
+- If the user asks to summarize, review, or analyze risks but does not provide contract text, ask them to paste the contract before using tools.
 
 Format:
 Thought: brief reasoning about what to do next.
@@ -54,6 +126,13 @@ Final Answer: your final response to the user in Vietnamese.
         3. Append Observation to prompt and repeat until Final Answer.
         """
         logger.log_event("AGENT_START", {"input": user_input, "model": self.llm.model_name})
+        guardrail = self._guardrail_response(user_input)
+        if guardrail:
+            status, message = guardrail
+            logger.log_event("AGENT_GUARDRAIL", {"status": status, "input": user_input})
+            logger.log_event("AGENT_END", {"steps": 0, "status": status})
+            return message
+
         scratchpad = ""
         self._current_user_input = user_input
         self._last_observation = ""
@@ -198,3 +277,34 @@ Final Answer: your final response to the user in Vietnamese.
             pass
 
         return raw_args.strip().strip('"').strip("'")
+
+    def _guardrail_response(self, user_input: str) -> Optional[Tuple[str, str]]:
+        text = user_input.strip().lower()
+        if not text:
+            return "empty_input", "Vui lòng nhập câu hỏi hoặc dán nội dung hợp đồng cần rà soát."
+
+        if not self._is_contract_related(text):
+            return (
+                "out_of_scope",
+                "Tôi chỉ hỗ trợ các tác vụ liên quan đến rà soát, tóm tắt và phân tích rủi ro hợp đồng. "
+                "Vui lòng cung cấp nội dung hợp đồng hoặc câu hỏi liên quan đến hợp đồng.",
+            )
+
+        if self._needs_contract_text(text) and not self._has_contract_text(text):
+            return (
+                "missing_contract_text",
+                "Bạn vui lòng dán nội dung hợp đồng cụ thể để tôi có thể tóm tắt và phân tích rủi ro chính xác hơn. "
+                "Hiện tại yêu cầu chưa có đủ dữ liệu hợp đồng để gọi công cụ phân tích.",
+            )
+
+        return None
+
+    def _is_contract_related(self, text: str) -> bool:
+        return any(keyword in text for keyword in self.CONTRACT_DOMAIN_KEYWORDS)
+
+    def _needs_contract_text(self, text: str) -> bool:
+        return any(keyword in text for keyword in self.ANALYSIS_INTENT_KEYWORDS)
+
+    def _has_contract_text(self, text: str) -> bool:
+        marker_count = sum(1 for marker in self.CONTRACT_TEXT_MARKERS if marker in text)
+        return len(text) >= 120 and marker_count >= 2

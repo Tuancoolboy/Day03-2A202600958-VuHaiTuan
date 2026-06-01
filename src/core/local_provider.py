@@ -3,6 +3,7 @@ import os
 from typing import Dict, Any, Optional, Generator
 from llama_cpp import Llama
 from src.core.llm_provider import LLMProvider
+from src.telemetry.metrics import tracker
 
 class LocalProvider(LLMProvider):
     """
@@ -56,6 +57,7 @@ class LocalProvider(LLMProvider):
             "completion_tokens": response["usage"]["completion_tokens"],
             "total_tokens": response["usage"]["total_tokens"]
         }
+        tracker.track_request("local", self.model_name, usage, latency_ms)
 
         return {
             "content": content,

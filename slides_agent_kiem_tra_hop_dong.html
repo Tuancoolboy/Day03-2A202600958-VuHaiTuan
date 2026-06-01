@@ -1,0 +1,732 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI Agent kiểm tra hợp đồng pháp lý cơ bản</title>
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --ink: #172033;
+      --muted: #64748b;
+      --card: #ffffff;
+      --line: #d8e0ea;
+      --blue: #19456b;
+      --teal: #0f766e;
+      --amber: #b7791f;
+      --red: #b42318;
+      --soft-teal: #e7f6f3;
+      --soft-amber: #fff7e6;
+      --soft-red: #fff1f0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      overflow: hidden;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: Arial, Helvetica, sans-serif;
+    }
+
+    .deck {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      height: 100%;
+      padding: 56px 72px 76px;
+      background:
+        linear-gradient(90deg, rgba(25, 69, 107, 0.07) 1px, transparent 1px),
+        linear-gradient(180deg, rgba(25, 69, 107, 0.06) 1px, transparent 1px),
+        var(--bg);
+      background-size: 34px 34px;
+    }
+
+    .slide.active {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 26px;
+    }
+
+    .eyebrow {
+      color: var(--teal);
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: 0;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1,
+    h2,
+    h3 {
+      color: var(--blue);
+      letter-spacing: 0;
+    }
+
+    h1 {
+      max-width: 1040px;
+      font-size: clamp(44px, 5.8vw, 78px);
+      line-height: 1.06;
+    }
+
+    h2 {
+      max-width: 1060px;
+      font-size: clamp(34px, 4.7vw, 58px);
+      line-height: 1.08;
+    }
+
+    h3 {
+      font-size: 25px;
+      line-height: 1.18;
+    }
+
+    p {
+      color: var(--muted);
+      font-size: clamp(20px, 2vw, 28px);
+      line-height: 1.42;
+    }
+
+    ul {
+      margin: 0;
+      padding-left: 26px;
+      display: grid;
+      gap: 14px;
+    }
+
+    li {
+      font-size: clamp(20px, 2vw, 27px);
+      line-height: 1.35;
+    }
+
+    strong {
+      color: var(--ink);
+    }
+
+    .lead {
+      max-width: 980px;
+      color: #344054;
+      font-size: clamp(24px, 2.5vw, 34px);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.22fr) 410px;
+      gap: 54px;
+      align-items: center;
+    }
+
+    .doc-art {
+      min-height: 430px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card);
+      padding: 26px;
+      box-shadow: 0 22px 55px rgba(23, 32, 51, 0.14);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .doc-art::before {
+      content: "";
+      position: absolute;
+      inset: 0 0 auto;
+      height: 10px;
+      background: linear-gradient(90deg, var(--teal), var(--blue));
+    }
+
+    .doc-title {
+      width: 76%;
+      height: 28px;
+      margin: 32px 0 26px;
+      border-radius: 4px;
+      background: var(--blue);
+    }
+
+    .doc-line {
+      height: 13px;
+      margin-bottom: 15px;
+      border-radius: 999px;
+      background: #dce5ef;
+    }
+
+    .doc-line.short {
+      width: 62%;
+    }
+
+    .risk-stamp {
+      margin-top: 28px;
+      padding: 18px;
+      border: 1px solid #f0c3bd;
+      border-left: 7px solid var(--red);
+      border-radius: 8px;
+      color: var(--red);
+      background: var(--soft-red);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .grid-2,
+    .grid-3,
+    .grid-5 {
+      display: grid;
+      gap: 22px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .grid-3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    .grid-5 {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .card {
+      min-height: 188px;
+      padding: 24px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.96);
+    }
+
+    .card p,
+    .card li {
+      margin-top: 12px;
+      font-size: 21px;
+      line-height: 1.36;
+    }
+
+    .num {
+      width: 42px;
+      height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      border-radius: 50%;
+      color: #fff;
+      background: var(--teal);
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .step {
+      min-height: 205px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card);
+      position: relative;
+    }
+
+    .step:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      top: 50%;
+      right: -12px;
+      transform: translateY(-50%);
+      color: var(--amber);
+      font-size: 25px;
+      font-weight: 700;
+      z-index: 3;
+    }
+
+    .step h3 {
+      margin-bottom: 10px;
+      font-size: 20px;
+    }
+
+    .step p {
+      font-size: 17px;
+      line-height: 1.36;
+    }
+
+    .source {
+      border-left: 7px solid var(--teal);
+    }
+
+    .risk {
+      border-left: 7px solid var(--red);
+      background: var(--soft-red);
+    }
+
+    .note {
+      padding: 22px 26px;
+      border: 1px solid #efd69b;
+      border-left: 8px solid var(--amber);
+      border-radius: 8px;
+      background: var(--soft-amber);
+    }
+
+    .note p {
+      color: #744900;
+      font-size: clamp(21px, 2vw, 29px);
+    }
+
+    .table-wrap {
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      padding: 17px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+      font-size: 20px;
+      line-height: 1.34;
+    }
+
+    th {
+      color: #fff;
+      background: var(--blue);
+      font-size: 19px;
+    }
+
+    tr:last-child td {
+      border-bottom: 0;
+    }
+
+    .footer {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 54px;
+      padding: 0 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--line);
+      background: rgba(246, 248, 251, 0.96);
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    button {
+      width: 38px;
+      height: 34px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--blue);
+      font-size: 20px;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .progress {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 54px;
+      height: 5px;
+      background: #dbe4ef;
+    }
+
+    .progress-bar {
+      height: 100%;
+      width: 0;
+      background: var(--teal);
+      transition: width 160ms ease;
+    }
+
+    @media (max-width: 980px) {
+      body {
+        overflow: auto;
+      }
+
+      .deck {
+        height: auto;
+        min-height: 100vh;
+      }
+
+      .slide {
+        height: auto;
+        min-height: 100vh;
+        padding: 34px 22px 92px;
+      }
+
+      .slide.active {
+        justify-content: flex-start;
+      }
+
+      .hero,
+      .grid-2,
+      .grid-3,
+      .grid-5 {
+        grid-template-columns: 1fr;
+      }
+
+      .doc-art {
+        min-height: 320px;
+      }
+
+      .step:not(:last-child)::after {
+        content: "v";
+        top: auto;
+        right: 20px;
+        bottom: -22px;
+        transform: none;
+      }
+
+      th,
+      td {
+        font-size: 17px;
+        padding: 13px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck">
+    <!-- Slide 1 -->
+    <section class="slide active">
+      <div class="hero">
+        <div>
+          <div class="eyebrow">Slide 1: Tên chủ đề</div>
+          <h1>AI Agent kiểm tra hợp đồng pháp lý cơ bản</h1>
+          <p class="lead">Hệ thống hỗ trợ người dùng đọc hiểu hợp đồng, phát hiện điều khoản rủi ro và gợi ý câu hỏi cần hỏi trước khi ký.</p>
+          <div style="margin-top: 20px; font-weight: bold; color: var(--teal);">Thông điệp chính: AI Agent không thay thế luật sư, nhưng giúp người dùng hiểu văn bản pháp lý nhanh hơn và cẩn thận hơn.</div>
+        </div>
+        <div class="doc-art" aria-hidden="true">
+          <div class="doc-title"></div>
+          <div class="doc-line"></div>
+          <div class="doc-line"></div>
+          <div class="doc-line short"></div>
+          <div class="doc-line"></div>
+          <div class="doc-line short"></div>
+          <div class="risk-stamp">Điều khoản rủi ro<br>Đọc hiểu & Gợi ý câu hỏi</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 2 -->
+    <section class="slide">
+      <div class="eyebrow">Slide 2: Vấn đề hiện tại</div>
+      <h2>Người dùng thường gặp khó khăn khi đọc hợp đồng</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Lý do gặp khó khăn</h3>
+          <ul>
+            <li>Hợp đồng dài, nhiều thuật ngữ pháp lý.</li>
+            <li>Dễ bỏ sót điều khoản quan trọng.</li>
+            <li>Không biết điều khoản nào có thể gây bất lợi.</li>
+            <li>Không biết nên hỏi lại bên còn lại những gì.</li>
+            <li>Cá nhân hoặc DN nhỏ thường không có luật sư hỗ trợ từ đầu.</li>
+          </ul>
+        </div>
+        <div class="card risk">
+          <h3>Ví dụ rủi ro tiêu biểu</h3>
+          <ul>
+            <li>Mất toàn bộ tiền cọc nếu chấm dứt sớm.</li>
+            <li>Phạt vi phạm quá cao.</li>
+            <li>Trách nhiệm bồi thường không rõ.</li>
+            <li>Điều khoản chấm dứt hợp đồng mập mờ.</li>
+            <li>Quyền lợi của một bên không được ghi cụ thể.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 3 -->
+    <section class="slide">
+      <div class="eyebrow">Slide 3: Đối tượng sử dụng</div>
+      <h2>AI Agent này phù hợp với những ai?</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Đối tượng hướng tới</h3>
+          <ul style="grid-template-columns: 1fr 1fr; display: grid; gap: 10px; padding-left: 20px;">
+            <li>Người thuê nhà</li>
+            <li>Người lao động chuẩn bị ký hợp đồng</li>
+            <li>Sinh viên đi thực tập</li>
+            <li>Freelancer ký hợp đồng dịch vụ</li>
+            <li>Chủ doanh nghiệp nhỏ</li>
+            <li>Người không có kiến thức chuyên sâu</li>
+          </ul>
+        </div>
+        <div class="card source">
+          <h3>Nhu cầu chính của người dùng</h3>
+          <ul>
+            <li>Muốn hiểu nhanh hợp đồng.</li>
+            <li>Muốn biết điểm nào cần chú ý.</li>
+            <li>Muốn có câu hỏi để hỏi lại trước khi ký.</li>
+            <li>Muốn giảm rủi ro trước khi đưa ra quyết định.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 4 -->
+    <section class="slide">
+      <div class="eyebrow">Slide 4: Giải pháp đề xuất</div>
+      <h2>Chỉ cần upload hợp đồng PDF, Agent sẽ tự động tạo báo cáo</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Agent sẽ thực hiện</h3>
+          <ul style="font-size: 19px;">
+            <li>Đọc nội dung và trích xuất các điều khoản quan trọng.</li>
+            <li>Xác định loại hợp đồng & Tra cứu nguồn pháp lý liên quan.</li>
+            <li>So sánh nội dung hợp đồng với nguồn tham khảo.</li>
+            <li>Đánh dấu điều khoản rủi ro & Gợi ý câu hỏi nên hỏi.</li>
+          </ul>
+        </div>
+        <div class="card source">
+          <h3>Kết quả cuối cùng nhận được</h3>
+          <ul style="font-size: 19px;">
+            <li>Tóm tắt hợp đồng dễ hiểu.</li>
+            <li>Danh sách điều khoản quan trọng và điều khoản rủi ro.</li>
+            <li>Câu hỏi cần hỏi bên còn lại trước khi ký.</li>
+            <li>Nguồn tham khảo pháp lý đầy đủ.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 5 -->
+    <section class="slide">
+      <div class="eyebrow">Slide 5: Vì sao đây là AI Agent?</div>
+      <h2>Hệ thống tự thực hiện một chuỗi hành động có kế hoạch</h2>
+      <div class="grid-2">
+        <div class="card">
+          <h3>Không chỉ là chatbot đơn thuần</h3>
+          <p style="font-size: 18px;">Chatbot thường chỉ trả lời bị động dựa trên câu hỏi của người dùng. Còn AI Agent có khả năng:</p>
+          <ul style="font-size: 18px; margin-top: 10px;">
+            <li>Lập kế hoạch xử lý hợp đồng.</li>
+            <li>Tự động gọi tool đọc file PDF & tra cứu luật liên quan.</li>
+            <li>Trích xuất thông tin, so sánh và tạo báo cáo có cấu trúc.</li>
+          </ul>
+        </div>
+        <div class="card note" style="display: flex; flex-direction: column; justify-content: center; min-height: auto;">
+          <h3 style="color: var(--amber); margin-bottom: 8px;">Thông điệp cốt lõi</h3>
+          <p style="color: #744900; font-size: 20px; font-weight: bold; line-height: 1.4;">
+            "Nếu chỉ tóm tắt hợp đồng thì đó là chatbot. Nếu biết đọc file, tra cứu luật, so sánh, trích dẫn nguồn và cảnh báo rủi ro thì đó là AI Agent."
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 6 -->
+    <section class="slide">
+      <div class="eyebrow">Slide 6: Flow hoạt động của hệ thống</div>
+      <h2>Quy trình xử lý tự động từ tệp tin đến báo cáo cuối cùng</h2>
+      <div class="grid-2" style="grid-template-columns: 1fr 1.2fr; gap: 30px;">
+        <div class="card" style="padding: 15px; font-family: monospace; font-size: 14px; background: #2d3748; color: #a0aec0; border: none; display: flex; flex-direction: column; justify-content: center; align-items: center;">
+          <div style="color: #fff; margin-bottom: 5px;">User upload hợp đồng PDF</div>
+          <div>↓</div>
+          <div style="color: #fff; margin-bottom: 5px;">PDF Reader / OCR</div>
+          <div>↓</div>
+          <div style="color: #fff; margin-bottom: 5px;">Text Extraction</div>
+          <div>↓</div>
+          <div style="color: #fff; margin-bottom: 5px;">Clause Extraction</div>
+          <div>↓</div>
+          <div style="color: #f6ad55; margin-bottom: 5px;">Contract Type Detection</div>
+          <div>↓</div>
+          <div style="color: #4fd1c5; margin-bottom: 5px;">Legal Search Tool</div>
+          <div>↓</div>
+          <div style="color: #fc8181; margin-bottom: 5px;">Comparison & Risk Analysis</div>
+          <div>↓</div>
+          <div style="color: #68d391;">Final Report</div>
+        </div>
+        <div class="card" style="font-size: 16px; display: flex; flex-direction: column; justify-content: center; gap: 8px;">
+          <h3 style="font-size: 19px;">Các bước triển khai chi tiết:</h3>
+          <p style="font-size: 15px; margin-top: 2px;">1. Đọc nội dung PDF (sử dụng OCR nếu là ảnh quét).</p>
+          <p style="font-size: 15px; margin-top: 2px;">2. Phân tách văn bản thành từng điều khoản và xác định loại hợp đồng.</p>
+          <p style="font-size: 15px; margin-top: 2px;">3. Tự động tra cứu các nguồn văn bản pháp lý tương ứng.</p>
+          <p style="font-size: 15px; margin-top: 2px;">4. So sánh thực tế hợp đồng với quy định pháp luật và xuất báo cáo.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Slide 7 -->
+    <section class="slide">
+      <div class="eyebrow">Slide 7: Tool Calling trong Agent</div>
+      <h2>Các công cụ giúp Agent thực thi hành động thực tế</h2>
+      <div class="grid-3" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
+        <div class="card" style="min-height: auto; padding: 15px;">
+          <h3 style="font-size: 18px; color: var(--blue);">1. PDF Reader & OCR</h3>
+          <p style="font-size: 14px; margin-top: 6px;">Đọc file PDF thường hoặc chạy OCR nếu file là dạng ảnh quét.</p>
+          <div style="font-size: 13px; margin-top: 8px; background: #edf2f7; padding: 6px; border-radius: 4px;">
+            <strong>Input:</strong> contract.pdf<br>
+            <strong>Output:</strong> Chuỗi văn bản
+          </div>
+        </div>
+        <div class="card" style="min-height: auto; padding: 15px;">
+          <h3 style="font-size: 18px; color: var(--blue);">2. Clause Extraction</h3>
+          <p style="font-size: 14px; margin-top: 6px;">Tách nhỏ hợp đồng thành các điều khoản chính: cọc, phạt, bồi thường,...</p>
+          <div style="font-size: 13px; margin-top: 8px; background: #edf2f7; padding: 6px; border-radius: 4px;">
+            <strong>Output:</strong> Danh sách điều khoản cấu trúc
+          </div>
+        </div>
+        <div class="card" style="min-height: auto; padding: 15px;">
+          <h3 style="font-size: 18px; color: var(--blue);">3. Legal Search</h3>
+          <p style="font-size: 14px; margin-top: 6px;">Tra cứu nguồn pháp lý liên quan trên mạng (Bộ luật Dân sự, Lao động,...).</p>
+          <div style="font-size: 13px; margin-top: 8px; background: #edf2f7; padding: 6px; border-radius: 4px;">
+            <strong>Ví dụ:</strong> Tìm quy định chấm dứt HĐ, thử việc,...
+          </div>
+        </div>
+      </div>
+      <div class="card risk" style="min-height: auto; padding: 15px; margin-top: 10px;">
+        <h3 style="font-size: 18px;">4. Risk Analysis Tool (Đánh giá rủi ro)</h3>
+        <p style="font-size: 15px; margin-top: 5px;"><strong>Ví dụ:</strong> Hợp đồng ghi "Mất toàn bộ tiền cọc nếu chấm dứt trước hạn" -> Đánh giá: <strong>Rủi ro Cao</strong>. Lý do: Chưa ghi rõ điều kiện hoàn cọc. Câu hỏi gợi ý: Nếu báo trước 30 ngày có được hoàn cọc không?</p>
+      </div>
+    </section>
+
+    <!-- Slide 8 -->
+    <section class="slide">
+      <div class="eyebrow">Slide 8: Output của hệ thống</div>
+      <h2>Báo cáo kết quả chi tiết cho người dùng</h2>
+      <div class="table-wrap">
+        <table style="font-size: 15px;">
+          <thead>
+            <tr>
+              <th style="width: 25%; padding: 10px;">Phần báo cáo</th>
+              <th style="width: 40%; padding: 10px;">Mô tả chi tiết</th>
+              <th style="width: 35%; padding: 10px;">Ví dụ cụ thể</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding: 10px;"><strong>1. Tóm tắt hợp đồng</strong></td>
+              <td style="padding: 10px;">Khái quát các thông tin chính của hợp đồng.</td>
+              <td style="padding: 10px;">Hợp đồng thuê nhà 12 tháng, tiền thuê 6 triệu/tháng, cọc 2 tháng.</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px;"><strong>2. Điều khoản quan trọng</strong></td>
+              <td style="padding: 10px;">Thời hạn, giá thuê, đặt cọc, thanh toán, bồi thường, phạt vi phạm.</td>
+              <td style="padding: 10px;">Cam kết bàn giao nhà đúng hạn, lịch thanh toán định kỳ.</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px;"><strong>3. Điều khoản rủi ro</strong></td>
+              <td style="padding: 10px;">Các điều khoản bất lợi, không rõ ràng hoặc thiếu công bằng.</td>
+              <td style="padding: 10px;">Mất cọc khi chấm dứt trước hạn; thiếu quy định trách nhiệm sửa chữa.</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px;"><strong>4. Câu hỏi nên hỏi trước khi ký</strong></td>
+              <td style="padding: 10px;">Những câu hỏi giúp làm rõ quyền lợi trước khi ký kết.</td>
+              <td style="padding: 10px;">Ai chịu phí sửa chữa tài sản? Nếu chủ nhà tự ý lấy lại nhà thì đền bù thế nào?</td>
+            </tr>
+            <tr>
+              <td style="padding: 10px;"><strong>5. Nguồn tham khảo</strong></td>
+              <td style="padding: 10px;">Cơ sở pháp lý được tra cứu và trích dẫn.</td>
+              <td style="padding: 10px;">Điều 328 Bộ luật Dân sự 2015 về Đặt cọc.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Slide 9 -->
+    <section class="slide">
+      <div class="eyebrow">Slide 9: Bảo trì và kiểm soát hệ thống</div>
+      <h2>Đảm bảo tính chính xác, cập nhật và kiểm soát rủi ro pháp lý</h2>
+      <div class="grid-3" style="grid-template-columns: repeat(3, 1fr); gap: 15px;">
+        <div class="card" style="padding: 15px; min-height: auto;">
+          <h3 style="font-size: 17px; color: var(--blue);">1. Cập nhật & Kiểm tra nguồn</h3>
+          <p style="font-size: 13px; margin-top: 5px;">Tự động cập nhật Bộ luật Dân sự, Lao động, Luật Nhà ở mới từ Cổng thông tin CP, Bộ Tư pháp, Công báo.</p>
+        </div>
+        <div class="card" style="padding: 15px; min-height: auto;">
+          <h3 style="font-size: 17px; color: var(--blue);">2. Human-in-the-loop & Logs</h3>
+          <p style="font-size: 13px; margin-top: 5px;">Chuyển tiếp chuyên gia khi rủi ro cao. Lưu lại lịch sử tệp đã xử lý, tool đã gọi, và phản hồi của người dùng.</p>
+        </div>
+        <div class="card" style="padding: 15px; min-height: auto;">
+          <h3 style="font-size: 17px; color: var(--blue);">3. Đánh giá định kỳ</h3>
+          <p style="font-size: 13px; margin-top: 5px;">Kiểm tra xem Agent có trích xuất đúng điều khoản, lấy nguồn chính xác hay bỏ sót rủi ro không.</p>
+        </div>
+      </div>
+      <div class="note" style="padding: 12px 20px; margin-top: 10px;">
+        <p style="font-size: 16px; margin: 0; color: #744900;">
+          <strong>Giới hạn trách nhiệm:</strong> Hệ thống chỉ hỗ trợ đọc hiểu ban đầu và không phải là tư vấn pháp lý chính thức. Đối với các hợp đồng lớn và quan trọng, khuyến khích người dùng liên hệ luật sư.
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <div class="progress" aria-hidden="true">
+    <div class="progress-bar" id="progressBar"></div>
+  </div>
+
+  <footer class="footer">
+    <span>AI Agent kiểm tra hợp đồng pháp lý cơ bản</span>
+    <div class="controls">
+      <button type="button" id="prevBtn" aria-label="Slide trước">&lt;</button>
+      <span id="counter">1 / 9</span>
+      <button type="button" id="nextBtn" aria-label="Slide sau">&gt;</button>
+    </div>
+  </footer>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll(".slide"));
+    const counter = document.getElementById("counter");
+    const progressBar = document.getElementById("progressBar");
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    let current = 0;
+
+    function render(index) {
+      current = Math.max(0, Math.min(index, slides.length - 1));
+      slides.forEach((slide, slideIndex) => {
+        slide.classList.toggle("active", slideIndex === current);
+      });
+      counter.textContent = `${current + 1} / ${slides.length}`;
+      progressBar.style.width = `${((current + 1) / slides.length) * 100}%`;
+      prevBtn.disabled = current === 0;
+      nextBtn.disabled = current === slides.length - 1;
+    }
+
+    prevBtn.addEventListener("click", () => render(current - 1));
+    nextBtn.addEventListener("click", () => render(current + 1));
+
+    window.addEventListener("keydown", (event) => {
+      if (event.key === "ArrowRight" || event.key === " ") {
+        render(current + 1);
+      }
+      if (event.key === "ArrowLeft") {
+        render(current - 1);
+      }
+    });
+
+    render(0);
+  </script>
+</body>
+</html>

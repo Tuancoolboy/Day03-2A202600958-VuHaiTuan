@@ -70,7 +70,20 @@ Metrics were collected from `logs/2026-06-01.log` during the final 3 agent smoke
 
 ---
 
-## 4. Root Cause Analysis (RCA) - Failure Traces
+## 4. Outputs
+
+The final output samples are stored in `outputs/sample_outputs.md`.
+
+| Output Case | Command | Result Summary |
+| :--- | :--- | :--- |
+| Simple contract question | `python run_agent.py "Hợp đồng thuê nhà là gì?..."` | Agent answered directly in Vietnamese without tool calls. |
+| Rental contract risk analysis | `python run_agent.py "Hợp đồng thuê nhà: Bên A..."` | Agent summarized the contract and identified deposit, termination, and dispute-resolution risks. |
+| Missing contract text | `python run_agent.py "Tóm tắt hợp đồng thuê nhà..."` | V2 guardrail asked the user to paste the actual contract before analysis. |
+| Out-of-scope request | `python run_agent.py "Hôm nay thời tiết thế nào?"` | V2 guardrail rejected the request and explained the contract-review scope. |
+
+---
+
+## 5. Root Cause Analysis (RCA) - Failure Traces
 
 ### Case Study: Missing Contract Content
 
@@ -82,7 +95,7 @@ Metrics were collected from `logs/2026-06-01.log` during the final 3 agent smoke
 
 ---
 
-## 5. Ablation Studies & Experiments
+## 6. Ablation Studies & Experiments
 
 ### Experiment 1: Prompt v1 vs Prompt v2
 
@@ -104,7 +117,7 @@ Metrics were collected from `logs/2026-06-01.log` during the final 3 agent smoke
 
 ---
 
-## 6. Production Readiness Review
+## 7. Production Readiness Review
 
 - **Security**: Tool execution is limited to an allowlist from `self.tools`; the agent does not execute arbitrary functions. Input-size limits and stricter validation should be added.
 - **Guardrails**: `max_steps=5` prevents infinite loops and uncontrolled billing. The parser accepts only the `Action: tool_name(argument)` format. V2 also blocks out-of-domain requests and missing-contract analysis requests before the LLM loop.
